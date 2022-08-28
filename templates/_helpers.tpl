@@ -111,5 +111,4 @@ server_reset_query_always = 1
 
 {{- define "pgbouncer.pgbouncer.userlist.txt" }}
 "{{ .Values.auth.AIRFLOW_USERNAME }}" "{{ .Values.auth.AIRFLOW_PASSWORD }}"
-"{{ .Values.auth.ENTITY_USERNAME }}" "{{ .Values.auth.ENTITY_PASSWORD }}"
 {{- end }}
