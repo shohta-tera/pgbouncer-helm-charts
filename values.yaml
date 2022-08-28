@@ -1,0 +1,147 @@
+###################################
+## DATABASE | PgBouncer
+###################################
+pgbouncer:
+  replicas: 2
+  ## if the pgbouncer Deployment is created
+  ##
+  enabled: true
+
+  ## configs for the pgbouncer container image
+  ##
+  image:
+    repository: bitnami/pgbouncer
+    tag: 1.17.0-debian-11-r25
+    pullPolicy: IfNotPresent
+
+  ## resource requests/limits for the pgbouncer Pods
+  ## - spec for ResourceRequirements:
+  ##   https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#resourcerequirements-v1-core
+  ##
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+
+  ## the nodeSelector configs for the pgbouncer Pods
+  ## - docs for nodeSelector:
+  ##   https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
+  ##
+  nodeSelector: {}
+
+  ## the affinity configs for the pgbouncer Pods
+  ## - spec for Affinity:
+  ##   https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#affinity-v1-core
+  ##
+  affinity: {}
+
+  ## the toleration configs for the pgbouncer Pods
+  ## - spec for Toleration:
+  ##   https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#toleration-v1-core
+  ##
+  tolerations: []
+
+  ## the security context for the pgbouncer Pods
+  ## - spec for PodSecurityContext:
+  ##   https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#podsecuritycontext-v1-core
+  ##
+  securityContext: {}
+
+  ## Labels for the pgbouncer Deployment
+  ##
+  labels: {}
+
+  ## Pod labels for the pgbouncer Deployment
+  ##
+  podLabels: {}
+
+  ## annotations for the pgbouncer Deployment
+  ##
+  annotations: {}
+
+  ## Pod annotations for the pgbouncer Deployment
+  ##
+  podAnnotations: {}
+
+  ## if we add the annotation: "cluster-autoscaler.kubernetes.io/safe-to-evict" = "true"
+  ##
+  safeToEvict: true
+
+  ## configs for the PodDisruptionBudget of the pgbouncer Deployment
+  ##
+  podDisruptionBudget:
+    ## if a PodDisruptionBudget resource is created for the pgbouncer Deployment
+    ##
+    enabled: false
+
+    ## the maximum unavailable pods/percentage for the pgbouncer Deployment
+    ##
+    maxUnavailable:
+
+    ## the minimum available pods/percentage for the pgbouncer Deployment
+    ##
+    minAvailable:
+
+  ## configs for the pgbouncer Pods' liveness probe
+  ##
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 30
+    timeoutSeconds: 60
+    failureThreshold: 3
+
+  ## configs for the pgbouncer Pods' startup probe
+  ##
+  startupProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 15
+    failureThreshold: 30
+
+  ## the maximum number of seconds to wait for queries upon pod termination, before force killing
+  ##
+  terminationGracePeriodSeconds: 120
+
+  ## sets pgbouncer config: `auth_type`
+  ##
+  authType: md5
+
+  ## sets pgbouncer config: `max_client_conn`
+  ##
+  maxClientConnections: 2000
+
+  ## sets pgbouncer config: `default_pool_size`
+  ##
+  poolSize: 5
+
+  ## sets pgbouncer config: `log_disconnections`
+  ##
+  logDisconnections: 0
+
+  ## sets pgbouncer config: `log_connections`
+  ##
+  logConnections: 0
+
+  ## set environmnet variable for pgbouncer
+  envVars:
+    POSTGRESQL_USERNAME: postgres
+    PGBOUNCER_POOL_MODE: transaction
+    PGBOUNCER_AUTH_USER: pgbouncer
+    PGBOUCCER_AUTH_QUERY: SELECT usename, passwd FROM pg_shadow WHERE usename = $1
+    POSTGRESQL_HOST: postgres.database.svc.cluster.local
+    PGBOUNCER_AUTH_FILE: /bitnami/pgbouncer/conf/userlist.txt
+
+## sets pgbouncer config:
+externalDatabase:
+  host: postgres.database.svc.cluster.local
+  port: 5432
+
+## whether create serviceAccount or not
+serviceAccount:
+  create: true
+  name: ""

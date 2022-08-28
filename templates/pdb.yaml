@@ -1,0 +1,22 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "pgbouncer.fullname" . }}
+  labels:
+    app: {{ include "pgbouncer.labels.app" . }}
+    component: pgbouncer
+    chart: {{ include "pgbouncer.labels.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  {{- if .Values.pgbouncer.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ .Values.pgbouncer.podDisruptionBudget.maxUnavailable }}
+  {{- end }}
+  {{- if .Values.pgbouncer.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.pgbouncer.podDisruptionBudget.minAvailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: {{ include "pgbouncer.labels.app" . }}
+      component: pgbouncer
+      release: {{ .Release.Name }}

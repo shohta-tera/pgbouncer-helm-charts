@@ -1,0 +1,133 @@
+{{- $podNodeSelector := include "pgbouncer.podNodeSelector" (dict "Release" .Release "Values" .Values "nodeSelector" .Values.pgbouncer.nodeSelector) }}
+{{- $podAffinity := include "pgbouncer.podAffinity" (dict "Release" .Release "Values" .Values "affinity" .Values.pgbouncer.affinity) }}
+{{- $podTolerations := include "pgbouncer.podTolerations" (dict "Release" .Release "Values" .Values "tolerations" .Values.pgbouncer.tolerations) }}
+{{- $podSecurityContext := include "pgbouncer.podSecurityContext" (dict "Release" .Release "Values" .Values "securityContext" .Values.pgbouncer.securityContext) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "pgbouncer.fullname" . }}-pgbouncer
+  labels:
+    app: {{ include "pgbouncer.labels.app" . }}
+    component: pgbouncer
+    chart: {{ include "pgbouncer.labels.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    {{- if .Values.pgbouncer.labels }}
+    {{- toYaml .Values.pgbouncer.labels | nindent 4 }}
+    {{- end }}
+  {{- if .Values.pgbouncer.annotations }}
+  annotations:
+  {{- toYaml .Values.pgbouncer.annotations | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.pgbouncer.replicas }}
+  strategy:
+    rollingUpdate:
+      ## multiple pgbouncer pods can safely run concurrently
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: {{ include "pgbouncer.labels.app" . }}
+      component: pgbouncer
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      annotations:
+        {{- if .Values.pgbouncer.podAnnotations }}
+        {{- toYaml .Values.pgbouncer.podAnnotations | nindent 8 }}
+        {{- end }}
+        {{- if .Values.pgbouncer.podAnnotations }}
+        {{- toYaml .Values.pgbouncer.podAnnotations | nindent 8 }}
+        {{- end }}
+        {{- if .Values.pgbouncer.safeToEvict }}
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+        {{- end }}
+      labels:
+        app: {{ include "pgbouncer.labels.app" . }}
+        component: pgbouncer
+        release: {{ .Release.Name }}
+        {{- if .Values.pgbouncer.podLabels }}
+        {{- toYaml .Values.pgbouncer.podLabels | nindent 8 }}
+        {{- end }}
+    spec:
+      restartPolicy: Always
+      {{- if .Values.pgbouncer.image.pullSecret }}
+      imagePullSecrets:
+        - name: {{ .Values.pgbouncer.image.pullSecret }}
+      {{- end }}
+      {{- if $podNodeSelector }}
+      nodeSelector:
+        {{- $podNodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if $podAffinity }}
+      affinity:
+        {{- $podAffinity | nindent 8 }}
+      {{- end }}
+      {{- if $podTolerations }}
+      tolerations:
+        {{- $podTolerations | nindent 8 }}
+      {{- end }}
+      {{- if $podSecurityContext }}
+      securityContext:
+        {{- $podSecurityContext | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.pgbouncer.terminationGracePeriodSeconds }}
+      serviceAccountName: {{ include "pgbouncer.serviceAccountName" . }}
+      containers:
+        - name: pgbouncer
+          image: {{ .Values.pgbouncer.image.repository }}:{{ .Values.pgbouncer.image.tag }}
+          imagePullPolicy: {{ .Values.pgbouncer.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.pgbouncer.resources | nindent 12 }}
+          env:
+            {{- range $key, $val := .Values.pgbouncer.envVars }}
+            - name: {{ $key }}
+              value: {{ $val | quote }}
+            {{- end }}
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "pgbouncer.fullname" . }}-pgbouncer
+                  key: postgres-password
+          ports:
+            - name: pgbouncer
+              containerPort: 6432
+              protocol: TCP
+          {{- if .Values.pgbouncer.livenessProbe.enabled }}
+          livenessProbe:
+            initialDelaySeconds: {{ .Values.pgbouncer.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.pgbouncer.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.pgbouncer.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.pgbouncer.livenessProbe.failureThreshold }}
+            tcpSocket:
+              port: 6432
+          {{- end }}
+          {{- if .Values.pgbouncer.startupProbe.enabled }}
+          startupProbe:
+            initialDelaySeconds: {{ .Values.pgbouncer.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.pgbouncer.startupProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.pgbouncer.startupProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.pgbouncer.startupProbe.failureThreshold }}
+            tcpSocket:
+              port: 6432
+          {{- end }}
+          volumeMounts:
+            - name: pgbouncer-config
+              mountPath: /bitnami/pgbouncer/conf
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - /bin/sh
+                - -c
+                - killall -INT pgbouncer && sleep 120
+      volumes:
+        - name: pgbouncer-config
+          secret:
+            secretName: {{ include "pgbouncer.fullname" . }}-pgbouncer
+            items:
+              - key: pgbouncer.ini
+                path: pgbouncer.ini
+              - key: userlist.txt
+                path: userlist.txt

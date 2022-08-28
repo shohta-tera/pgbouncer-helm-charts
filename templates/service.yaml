@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "pgbouncer.fullname" . }}-pgbouncer
+  labels:
+    app: {{ include "pgbouncer.labels.app" . }}
+    component: pgbouncer
+    chart: {{ include "pgbouncer.labels.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ include "pgbouncer.labels.app" . }}
+    component: pgbouncer
+    release: {{ .Release.Name }}
+  ports:
+    - name: pgbouncer
+      protocol: TCP
+      port: 6432
